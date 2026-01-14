@@ -12,11 +12,6 @@ import GUI from "lil-gui";
 // Create the main scene
 const scene = new THREE.Scene();
 
-// Add fog to the scene (color, near distance, far distance)
-scene.fog = new THREE.Fog(0xcccccc, 10, 15);
-
-// Set scene background color (should match fog for realism)
-scene.background = new THREE.Color(0xcccccc);
 
 /* -------------------- CAMERA -------------------- */
 
@@ -49,6 +44,23 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 /* -------------------- GEOMETRY & MESH -------------------- */
 
+
+//create a light
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.1); // Color, intensity
+scene.add(ambientLight);
+
+// create plane geometry and mesh
+const planeGeometry = new THREE.PlaneGeometry(10,10,1,1);
+const planeMaterial = new THREE.MeshStandardMaterial({
+  color: "#ffd905",
+  side : THREE.DoubleSide,
+})
+const plane = new THREE.Mesh(planeGeometry,planeMaterial);
+
+plane.rotation.x = Math.PI/2;
+plane.position.y =  -1;
+scene.add(plane);
+
 // Create box geometry (width, height, depth, segments)
 const geometry = new THREE.BoxGeometry(1, 1, 1, 20, 10, 10);
 
@@ -56,6 +68,7 @@ const geometry = new THREE.BoxGeometry(1, 1, 1, 20, 10, 10);
 const material = new THREE.MeshStandardMaterial({
   color: 0x00ff00,
   wireframe: true,
+  roughness: 0,
 });
 
 // Create mesh using geometry and material
@@ -64,16 +77,6 @@ let cube = new THREE.Mesh(geometry, material);
 // Add cube to the scene
 scene.add(cube);
 
-/* -------------------- LIGHT -------------------- */
-
-// Directional light (acts like sunlight)
-const light = new THREE.DirectionalLight(0xffffff, 1);
-
-// Position the light
-light.position.set(5, 5, 5);
-
-// Add light to the scene
-scene.add(light);
 
 /* -------------------- GUI -------------------- */
 
@@ -87,12 +90,21 @@ const settings = {
   posY: 0,
   posZ: 0,
   color: "#00ff00",
-  background: "#030659",
+  background: "#FE7F2D",
   visible: true,
   wireframe: true,
   shape: "cube",
   animation: 'none',
+  intensity : 1,
 };
+scene.background = new THREE.Color(settings.background);
+/* -------------------- Light CONTROLS -------------------- */
+const lightFolder = gui.addFolder("Light Controls");
+
+lightFolder.add(settings, 'intensity',0,2,0.1).onChange((value)=>{
+  ambientLight.intensity = value;
+})
+
 
 /* -------------------- SIZE CONTROLS -------------------- */
 
@@ -182,7 +194,7 @@ const animationsOptions ={
   Bounce: 'bounce',
 }
 
-drop.add(settings, 'animation', animationsOptions);
+dropdownFolder.add(settings, 'animation', animationsOptions);
 
 
 
