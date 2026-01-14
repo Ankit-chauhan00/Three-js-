@@ -1,0 +1,5 @@
+»» The intensity of the point light depends on the distance from the object
+
+»» The PointLight in Three.js is specifically designed to emit light uniformly in all directions from a single point, making it ideal for simulating realistic lighting effects.
+
+»» more the low Roughness of the object the object shines More
