@@ -1,4 +1,4 @@
-// Import core Three.js library
+// Import core THREE.js library
 import * as THREE from "three";
 
 // Import OrbitControls for camera interaction (rotate, zoom, pan)

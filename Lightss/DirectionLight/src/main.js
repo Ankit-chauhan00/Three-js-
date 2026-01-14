@@ -1,225 +1,151 @@
-// Import core Three.js library
-import * as THREE from "three";
-
-// Import OrbitControls for camera interaction (rotate, zoom, pan)
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-
-// Import lil-gui for UI controls
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import GUI from "lil-gui";
 
-/* -------------------- SCENE -------------------- */
+const gui = new GUI();
 
-// Create the main scene
+const config = {
+  wireframe: false,
+  visibleToggle : function () {
+    sphere.visible = !sphere.visible;
+  },
+  meshColor: '#003049',
+  lightColor : '#312dfb',
+  intensity: 16.81,
+  posX : 2,
+  posY : 1,
+  posZ : 4,
+  rotationX: 0,
+  rotationY: 0,
+  rotationZ: 0,
+}
+
+gui.add(config, "wireframe");
+gui.add(config, "visibleToggle");
+gui.addColor(config, "meshColor");
+gui.addColor(config, "lightColor");
+gui.add(config, "intensity", 0, 50, 0.01);
+const folder = gui.addFolder("Position");
+folder.add(config, "posX", -10, 10, 0.01);
+folder.add(config, "posY", -10, 10, 0.01);
+folder.add(config, "posZ", -10, 10, 0.01);
+const rotationfolder = gui.addFolder("Rotation");
+rotationfolder.add(config, "rotationX", -Math.PI, Math.PI, 0.01);
+rotationfolder.add(config, "rotationY", -Math.PI, Math.PI, 0.01);
+rotationfolder.add(config, "rotationZ", -Math.PI, Math.PI, 0.01);
+
+// canvas
+const canvas = document.querySelector("canvas.world");
+
+//create a scene 
 const scene = new THREE.Scene();
 
+//create a camera
 
-/* -------------------- CAMERA -------------------- */
-
-// Perspective camera (FOV, aspect ratio, near, far)
 const camera = new THREE.PerspectiveCamera(
   75,
-  window.innerWidth / window.innerHeight,
+  window.innerWidth/window.innerHeight,
   0.1,
   1000
 );
 
-// Move camera backward so we can see objects
+camera.position.x = 2;
+camera.position.y = 3;
 camera.position.z = 5;
 
-/* -------------------- RENDERER -------------------- */
+scene.add(camera);
 
-// WebGL renderer
-const renderer = new THREE.WebGLRenderer();
-
-// Set renderer size to full window
+//create a renderer
+const renderer = new THREE.WebGLRenderer({
+  canvas: canvas,
+})
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.render(scene, camera);
 
-// Add canvas to the DOM
-document.body.appendChild(renderer.domElement);
 
-/* -------------------- CONTROLS -------------------- */
-
-// Enable mouse controls for camera
 const controls = new OrbitControls(camera, renderer.domElement);
 
-/* -------------------- GEOMETRY & MESH -------------------- */
-
-
-//create a light
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.1); // Color, intensity
+// create a ambinenet light
+const ambientLight = new THREE.AmbientLight(0xffffff,1);
 scene.add(ambientLight);
 
-// create plane geometry and mesh
-const planeGeometry = new THREE.PlaneGeometry(10,10,1,1);
-const planeMaterial = new THREE.MeshStandardMaterial({
-  color: "#ffd905",
-  side : THREE.DoubleSide,
-})
-const plane = new THREE.Mesh(planeGeometry,planeMaterial);
+// create a direction light
+const directionalLight =  new THREE.DirectionalLight("#caf0f8",0.8);
+directionalLight.position.set(2,1,4);
+scene.add(directionalLight);
 
-plane.rotation.x = Math.PI/2;
-plane.position.y =  -1;
+//Create different  geometries
+const geometry = new THREE.SphereGeometry(1, 32, 32);
+const material = new THREE.MeshStandardMaterial({
+  color: 0x003049,
+});
+const sphere = new THREE.Mesh(geometry, material);
+sphere.position.x = -4.5;
+scene.add(sphere);
+
+const geometryBox = new THREE.BoxGeometry(1, 1, 1);
+const materialBox = new THREE.MeshStandardMaterial({
+  color: 0xff0054,
+});
+const box = new THREE.Mesh(geometryBox, materialBox);
+box.position.x = -2;
+scene.add(box);
+
+const geometryCylinder = new THREE.CylinderGeometry(1, 1, 1, 32);
+const materialCylinder = new THREE.MeshStandardMaterial({
+  color: 0x3a0ca3,
+});
+const cylinder = new THREE.Mesh(geometryCylinder, materialCylinder);
+cylinder.position.x = 0.5;
+scene.add(cylinder);
+
+const geometry2 = new THREE.SphereGeometry(1, 32, 32);
+const material2 = new THREE.MeshStandardMaterial({
+  color: 0xff0000,
+});
+const sphere2 = new THREE.Mesh(geometry2, material2);
+sphere2.position.x = 3;
+scene.add(sphere2);
+
+// Create a plane for a floor
+const planeGeometry = new THREE.PlaneGeometry(30, 30, 1, 1);
+const planeMaterial = new THREE.MeshStandardMaterial({ color: "#333d29" });
+const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+plane.position.y = -2;
+plane.rotation.x = -Math.PI / 2;
 scene.add(plane);
 
-// Create box geometry (width, height, depth, segments)
-const geometry = new THREE.BoxGeometry(1, 1, 1, 20, 10, 10);
 
-// Standard material (supports fog + lighting)
-const material = new THREE.MeshStandardMaterial({
-  color: 0x00ff00,
-  wireframe: true,
-  roughness: 0,
-});
+// helpers 
 
-// Create mesh using geometry and material
-let cube = new THREE.Mesh(geometry, material);
+const helper1 = new THREE.DirectionalLightHelper(directionalLight,2)
+scene.add(helper1);
+const helper2 = new THREE.DirectionalLightHelper(dirLignt2,2)
+scene.add(helper2);
 
-// Add cube to the scene
-scene.add(cube);
-
-
-/* -------------------- GUI -------------------- */
-
-// Create GUI instance
-const gui = new GUI();
-
-// Settings object connected to GUI
-const settings = {
-  size: 1,
-  posX: 0,
-  posY: 0,
-  posZ: 0,
-  color: "#00ff00",
-  background: "#FE7F2D",
-  visible: true,
-  wireframe: true,
-  shape: "cube",
-  animation: 'none',
-  intensity : 1,
-};
-scene.background = new THREE.Color(settings.background);
-/* -------------------- Light CONTROLS -------------------- */
-const lightFolder = gui.addFolder("Light Controls");
-
-lightFolder.add(settings, 'intensity',0,2,0.1).onChange((value)=>{
-  ambientLight.intensity = value;
-})
-
-
-/* -------------------- SIZE CONTROLS -------------------- */
-
-const sizeFolder = gui.addFolder("Size Controls");
-
-// Scale cube uniformly
-sizeFolder.add(settings, "size", 0.1, 1.5, 0.1).onChange((value) => {
-  cube.scale.set(value, value, value);
-});
-
-/* -------------------- POSITION CONTROLS -------------------- */
-
-const positionFolder = gui.addFolder("Position Folder");
-
-// Move cube on X axis
-positionFolder.add(settings, "posX", -5, 5, 0.01).onChange((value) => {
-  cube.position.x = value;
-});
-
-// Move cube on Y axis
-positionFolder.add(settings, "posY", -5, 5, 0.01).onChange((value) => {
-  cube.position.y = value;
-});
-
-// Move cube on Z axis (important for fog visibility)
-positionFolder.add(settings, "posZ", -5, 5, 0.01).onChange((value) => {
-  cube.position.z = value;
-});
-
-/* -------------------- VISIBILITY CONTROLS -------------------- */
-
-const visibleFolder = gui.addFolder("Visibility");
-
-// Toggle cube visibility
-visibleFolder.add(settings, "visible").onChange((value) => {
-  cube.visible = value;
-});
-
-// Toggle wireframe mode
-visibleFolder.add(settings, "wireframe").onChange((value) => {
-  cube.material.wireframe = value;
-});
-
-/* -------------------- COLOR CONTROLS -------------------- */
-
-const colourFolder = gui.addFolder("Color Settings");
-
-// Change cube color
-colourFolder.addColor(settings, "color").onChange((value) => {
-  cube.material.color.set(value);
-});
-
-// Change background color
-colourFolder.addColor(settings, "background").onChange((value) => {
-  scene.background = new THREE.Color(value);
-});
-
-// dropdown folers 
-const dropdownFolder = gui.addFolder('Dropdown Controls');
-
-
-
-// adding different geomertries
-const shapeOption = {Cube: 'cube', Sphere: 'sphere', Cylender: 'cylender', Torus : 'torus'};
-
-dropdownFolder.add(settings, 'shape', shapeOption).onChange((value)=>{
-// remove previous cube
-
-scene.remove(cube);
-  cube.geometry.dispose();
-
-  let geometry;
-  if(value === 'cube') geometry = new THREE.BoxGeometry(1,1,1,10,10,10);
-  if (value === "sphere") geometry = new THREE.SphereGeometry(0.7, 32, 32);
-  if (value === "cylender") geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
-  if(value === 'torus') geometry = new THREE.TorusGeometry(2,0.8,16,200)
-
-  cube = new THREE.Mesh(geometry, material);
-  scene.add(cube);
-
-})
-
-// adding different animations
-const animationsOptions ={
-  None : 'none',
-  Rotate: 'rotate',
-  Bounce: 'bounce',
-}
-
-dropdownFolder.add(settings, 'animation', animationsOptions);
-
-
-
-/* -------------------- ANIMATION LOOP -------------------- */
-
-// Animation loop (runs every frame)
+//Animation Loop
 function animate() {
   requestAnimationFrame(animate);
 
-  controls.update();
+  // change with lil-gui
+  sphere.material.wireframe = config.wireframe;
+  sphere.material.color.set(config.meshColor);
+  directionalLight.color.set(config.lightColor);
+  directionalLight.intensity = config.intensity;
+  directionalLight.position.x = config.posX;
+  directionalLight.position.y = config.posY;
+  directionalLight.position.z = config.posZ;
+  directionalLight.rotation.x = config.rotationX;
+  directionalLight.rotation.y = config.rotationY;
+  directionalLight.rotation.z = config.rotationZ;
 
-  if(settings.animation === 'rotate'){
-    cube.rotation.x+= 0.01;
-    cube.rotation.y += 0.01;
-  }
+  //animate diirection ligt while rotating in a circle
+  directionalLight.position.x+= Math.sin(Date.now()* 0.0001) * 10
+  directionalLight.position.z+= Math.cos(Date.now()* 0.0001) * 10
 
-  if(settings.animation === 'bounce'){
-    cube.position.y = Math.sin(Date.now() * 0.002)*2;
-  }
+  controls.update(); // Update the controls
 
-
-
-  // Render scene from camera perspective
+  // Render the scene
   renderer.render(scene, camera);
 }
-
-// Start animation
 animate();
