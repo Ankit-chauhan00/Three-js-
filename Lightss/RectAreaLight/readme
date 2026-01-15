@@ -1,0 +1,3 @@
+»» by default the object is not visible in the MeshStandard material it needs light
+
+>> by default plane geomety is horizontal so we have to rotate it by MAth.pi / 2 and by default one side is visble so we have to hake visible onother side
