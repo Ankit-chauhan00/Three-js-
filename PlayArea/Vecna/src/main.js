@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import GUI from 'lil-gui'
+import { Water } from "three/examples/jsm/objects/Water.js";
+
 const canvas = document.querySelector("canvas.world");
 
 const scene = new THREE.Scene();
@@ -84,7 +86,7 @@ gui.add(ambientLight,'intensity',0,10,0.1).name("Ambinent Light")
 
 
 const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-dirLight.position.set(0, 0, 5);
+dirLight.position.set(5, 10, 5);
 scene.add(dirLight);
 dirLight.castShadow = true;
 
@@ -138,7 +140,7 @@ let gltfModel = null;
 
 
 const loader = new GLTFLoader();
-
+const vecnaConfig =  { color :"#378f3e",}
 loader.load(
   "/models/scene.gltf",   // ✅ correct path for your setup
   (gltf) => {
@@ -152,13 +154,28 @@ loader.load(
     child.castShadow = true;
     child.receiveShadow = true;
 
-    const mat = child.material;
-
-       // Blend color with texture
+    var mat = child.material;
+  
+    
+    // Blend color with texture
     mat.color.set("#378f3e"); 
     mat.needsUpdate = true;
   }
 });
+
+gui.addColor(vecnaConfig, "color")
+  .name("Vecna Color")
+  .onChange((value) => {
+    if (!gltfModel) return;
+
+    gltfModel.traverse((child) => {
+      if (child.isMesh) {
+        child.material.color.set(value);
+        child.material.needsUpdate = true;
+      }
+    });
+  });
+
 
     scene.add(gltfModel);
    
@@ -193,18 +210,58 @@ gui.addColor(bgConfig, "background").name("Background Color").onChange((value)=>
   scene.background.set(value);
 })
 
+// Water Geometry
+const waterGeometry = new THREE.PlaneGeometry(20, 20);
+
+const water =new Water(waterGeometry,{
+textureHeight:1024,
+textureWidth: 1024,
+waterNormals: new THREE.TextureLoader().load(
+  "/textures/waternormals.jpg",
+    (texture) => {
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    }
+),
+ sunDirection:  dirLight.position.clone().normalize(),
+  sunColor: 0xffffff,
+  waterColor: 0x001e0f,
+  distortionScale: 3.7,
+  fog: scene.fog !== undefined,
+})
+water.rotation.x = -Math.PI / 2;
+water.position.y = -1.2;
+
+scene.add(water);
+
+
+
+water.material.uniforms.waterColor.value.setHSL(
+  0.55,
+  0.8,
+  0.3 + Math.sin(Date.now() * 0.001) * 0.05
+);
+
+// Light Helpers
+const helper= new THREE.DirectionalLightHelper(dirLight,5);
+scene.add(helper)
+
+
 function animate() {
   requestAnimationFrame(animate);
+
+  gltfModel.rotation.y+= 0.01;
+  water.material.uniforms.time.value += 1 / 60;
+  
   controls.update();
   renderer.render(scene, camera);
 }
+animate()
 
 
-// Light Helpers
-const helper= new THREE.DirectionalLightHelper(dirLight);
-scene.add(helper)
 
-animate();
+
+
+
 
 
 
