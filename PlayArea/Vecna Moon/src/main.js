@@ -9,7 +9,7 @@ import GUI from "lil-gui";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 /* =========================================================
    BASIC SETUP
 ========================================================= */
@@ -358,9 +358,7 @@ spotLight.shadow.bias = -0.0005;
 scene.add(spotLight);
 scene.add(spotLight.target);
 
-// Helper (debug only)
-const spotHelper = new THREE.SpotLightHelper(spotLight);
-scene.add(spotHelper);
+
 
 
 
@@ -404,9 +402,6 @@ gui.addColor(bgConfig, "background").name("Background Color").onChange((value)=>
   scene.background.set(value);
 })
 
-// GUI control
-gui.add(hemiLight, "intensity", 0, 2, 0.01).name("Hemisphere Light");
-gui.ad
 
 
 
@@ -438,12 +433,46 @@ composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.6, // strength
-  0.4, // radius
-  0.25 // threshold
+  0.35, // strength
+  0.25, // radius
+  0.4 // threshold
 );
 
 composer.addPass(bloomPass);
+
+/* =========================================================
+ color shader
+========================================================= */
+const ColorGradeShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    tint: { value: new THREE.Vector3(0.85, 0.95, 1.1) },
+    contrast: { value: 1.08 }
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec3 tint;
+    uniform float contrast;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv);
+      color.rgb *= tint;
+      color.rgb = (color.rgb - 0.5) * contrast + 0.5;
+      gl_FragColor = color;
+    }
+  `
+};
+
+const colorGradePass = new ShaderPass(ColorGradeShader);
+composer.addPass(colorGradePass);
 
 
 
@@ -465,18 +494,16 @@ function animate() {
     controls.target.lerp(vecnaHead, 0.08); // smooth look
   }
   targetDebug.position.copy(controls.target);
+
   const t = performance.now() * 0.001;
 
-scene.fog.near = 7 + Math.sin(t * 0.15) * 0.4;
-scene.fog.far  = 13 + Math.sin(t * 0.1) * 0.6;
 
 
-camera.position.x += Math.sin(t * 0.6) * 0.001;
-camera.position.y += Math.sin(t * 0.8) * 0.0008;
-spotLight.intensity = 5.5 + Math.sin(t * 6.5) * 0.4 + Math.random() * 0.15;
+// camera.position.x += Math.sin(t * 0.6) * 0.001;
+// camera.position.y += Math.sin(t * 0.8) * 0.0008;
+// spotLight.intensity = 5.5 + Math.sin(t * 6.5) * 0.4 + Math.random() * 0.15;
 
   controls.update();
-  spotHelper.update();
  composer.render();
 }
 animate();
