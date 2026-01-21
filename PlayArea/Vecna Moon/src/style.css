@@ -1,4 +1,89 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
+
+.unifrakturmaguntia-regular {
+  font-family: "UnifrakturMaguntia", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
 *{
+  margin: 0px;
+  padding: 0px;
   box-sizing: border-box;
+  color: white;
+  font-family: "UnifrakturMaguntia", cursive;
+} 
+
+body{
+  background-color: black;
 }
 
+/* Canvas at back */
+.world {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+
+/* Invisible overlay div */
+.hero-section {
+  display: flex ;
+  justify-content: center;
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  inset: 0;
+  z-index: 10;
+
+  /* TRANSPARENT BACKGROUND */
+  background-color: rgba(0, 0, 0, 0);
+
+  /* Must receive clicks */
+  pointer-events: auto;
+  /* IMPORTANT: still clickable */
+  pointer-events: auto;
+}
+
+.scroll-section {
+  min-height: 200vh; /* creates scroll */
+  width: 100%;
+
+  background: transparent; /* 👈 transparent */
+  padding: 100px 10vw;
+
+  color: white;
+}
+
+.nav-glass {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 85%;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  border-radius: 999px; /* 🔥 fully curved */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
+
+  z-index: 10;
+}
+
+.author{
+  display: flex;
+  gap: 40px;
+  justify-content: space-between;
+}

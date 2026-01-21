@@ -1,7 +1,6 @@
 /* =========================================================
    IMPORTS
 ========================================================= */
-
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -10,8 +9,12 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import {gsap} from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 /* =========================================================
-   BASIC SETUP
+   CORE SETUP
 ========================================================= */
 
 // Canvas
@@ -20,8 +23,6 @@ const canvas = document.querySelector("canvas.world");
 // Scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x111111);
-
-// Fog
 scene.fog = new THREE.Fog(0x000000, 6, 18);
 
 // Camera
@@ -32,12 +33,11 @@ const camera = new THREE.PerspectiveCamera(
   100
 );
 camera.position.set(0.22, 1.55, 1.85);
+
 // Renderer
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-// Shadows
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 
@@ -46,41 +46,45 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.minPolarAngle = Math.PI * 0.35;
 controls.maxPolarAngle = Math.PI * 0.55;
-controls.minDistance = 1.7;
-controls.maxDistance = 2.0;
- // slight off-center
 
-controls.enablePan = false; // optional but recommended
+
+// Disable controls during intro
+controls.enabled = false;
+
+  const cameraOrbit = {
+  angle: Math.PI * 0.25, // starting angle
+  radius: 1.9
+};
+
+
+
+// Camera intro animation
+window.addEventListener("load", () => {
+
+
+  // Scroll-driven orbit
+  gsap.to(cameraOrbit, {
+    angle: Math.PI * 3.60,
+    ease: "none",
+    scrollTrigger: {
+      trigger: ".hero-section",
+      start: "top top",
+      end: "+=3000",      // 🔑 FIXED RANGE
+      scrub: 1,
+      markers: true
+    }
+  });
+
+  ScrollTrigger.refresh(); // 🔑 REQUIRED
+});
 /* =========================================================
-  Bloom composer make the Vecna Glow
+   GUI
 ========================================================= */
-// const composer = new EffectComposer(renderer);
-// composer.addPass(new RenderPass(scene, camera));
-
-// const bloomPass = new UnrealBloomPass(
-//   new THREE.Vector2(window.innerWidth, window.innerHeight),
-//   0,   // strength
-//   0,   // radius
-//   0    // threshold
-// );
-// composer.addPass(bloomPass);
-/* =========================================================
-   GUI SETUP
-========================================================= */
-
 const gui = new GUI();
 
-/* ---------------- Camera Controls ---------------- */
-
-// const cameraConfig = { posX: 5, posY: 6, posZ: 3 };
-
-// const cameraFolder = gui.addFolder("Camera Position");
-// cameraFolder.add(cameraConfig, "posX", -10, 10, 0.1).onChange(v => camera.position.x = v);
-// cameraFolder.add(cameraConfig, "posY", -10, 10, 0.1).onChange(v => camera.position.y = v);
-// cameraFolder.add(cameraConfig, "posZ", -10, 20, 0.1).onChange(v => camera.position.z = v);
-
-/* ---------------- Model Controls ---------------- */
-
+/* =========================================================
+   MODEL STATE & CONTROLS
+========================================================= */
 let gltfModel = null;
 
 const vecnaControls = {
@@ -89,30 +93,32 @@ const vecnaControls = {
   posZ: 0,
   scale: 1.2
 };
+
 const vecnaFolder = gui.addFolder("Vecna Controls");
-vecnaFolder.add(vecnaControls, "posX", -4, 4, 0.1).onChange(v => gltfModel && (gltfModel.position.x = v));
-vecnaFolder.add(vecnaControls, "posY", -2, 10, 0.1).onChange(v => gltfModel && (gltfModel.position.y = v));
-vecnaFolder.add(vecnaControls, "posZ", -2, 2, 0.1).onChange(v => gltfModel && (gltfModel.position.z = v));
-vecnaFolder.add(vecnaControls, "scale", 0.2, 2, 0.1).onChange(v => {
-  if (gltfModel) gltfModel.scale.set(v, v, v);
-});
+vecnaFolder.add(vecnaControls, "posX", -4, 4, 0.1)
+  .onChange(v => gltfModel && (gltfModel.position.x = v));
+vecnaFolder.add(vecnaControls, "posY", -2, 10, 0.1)
+  .onChange(v => gltfModel && (gltfModel.position.y = v));
+vecnaFolder.add(vecnaControls, "posZ", -2, 2, 0.1)
+  .onChange(v => gltfModel && (gltfModel.position.z = v));
+vecnaFolder.add(vecnaControls, "scale", 0.2, 2, 0.1)
+  .onChange(v => gltfModel && gltfModel.scale.set(v, v, v));
 
 /* =========================================================
    LIGHTING
 ========================================================= */
 
-// Ambient Light
+// Ambient
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.03);
 scene.add(ambientLight);
-gui.add(ambientLight, "intensity", 0, 10, 0).name("Ambient Light");
+gui.add(ambientLight, "intensity", 0, 10, 0);
 
-// Directional Light
+// Directional
 const dirLight = new THREE.DirectionalLight(0xffffff, 6.40);
 dirLight.position.set(5.6, 6.2, 5.4);
 dirLight.castShadow = true;
 scene.add(dirLight);
 
-// Shadow settings
 dirLight.shadow.mapSize.set(2048, 2048);
 dirLight.shadow.camera.near = 0.5;
 dirLight.shadow.camera.far = 20;
@@ -121,25 +127,49 @@ dirLight.shadow.camera.right = 10;
 dirLight.shadow.camera.top = 10;
 dirLight.shadow.camera.bottom = -10;
 
-// Directional Light GUI
-const lightConfig = {
-  posX: 5,
-  posY: 10,
-  posZ: 5,
-  intensity: 0
-};
+// Under-face light
+const underLight = new THREE.PointLight(0x223344, 0.8, 3, 2);
+underLight.position.set(0.1, 1.2, 1.3);
+scene.add(underLight);
 
-const lightFolder = gui.addFolder("Directional Light");
-lightFolder.add(lightConfig, "posX", -10, 10, 0.1).onChange(v => dirLight.position.x = v);
-lightFolder.add(lightConfig, "posY", -10, 10, 0.1).onChange(v => dirLight.position.y = v);
-lightFolder.add(lightConfig, "posZ", -10, 20, 0.1).onChange(v => dirLight.position.z = v);
-lightFolder.add(lightConfig, "intensity", 0, 50, 0.1).onChange(v => dirLight.intensity = v);
+// Spot light
+const spotLight = new THREE.SpotLight(
+  0x66ccff,
+  6,
+  15,
+  Math.PI / 8,
+  0.5,
+  2
+);
+spotLight.position.set(1.2, 4.5, 2);
+spotLight.target.position.set(0, 1.8, 0);
+spotLight.castShadow = true;
+spotLight.shadow.mapSize.set(2048, 2048);
+spotLight.shadow.bias = -0.0005;
+scene.add(spotLight);
+scene.add(spotLight.target);
+
+// Hemisphere
+const hemiLight = new THREE.HemisphereLight(0x88ccff, 0x222222, 0.03);
+hemiLight.position.set(0, 10, 0);
+scene.add(hemiLight);
+
+// Rim
+const rimLight = new THREE.DirectionalLight(0x66ccff, 0);
+rimLight.position.set(-5, 4, -6);
+scene.add(rimLight);
+
+const rimFolder = gui.addFolder("Rim Light");
+rimFolder.add(rimLight.position, "x", -10, 10, 0.1);
+rimFolder.add(rimLight.position, "y", -10, 10, 0.1);
+rimFolder.add(rimLight.position, "z", -10, 10, 0.1);
+rimFolder.add(rimLight, "intensity", 0, 5, 0.1);
 
 /* =========================================================
-   making camera look at head
+   CAMERA TARGET (HEAD LOCK)
 ========================================================= */
 const vecnaHead = new THREE.Vector3();
-let vecnaHeadObject = null; // optional bone
+let vecnaHeadObject = null;
 
 const targetDebug = new THREE.Mesh(
   new THREE.SphereGeometry(0.05),
@@ -148,91 +178,40 @@ const targetDebug = new THREE.Mesh(
 scene.add(targetDebug);
 
 /* =========================================================
-   GLTF MODEL LOADING
+   MODEL LOADING
 ========================================================= */
-
 const loader = new GLTFLoader();
 const vecnaMaterialConfig = { color: "#1ad9ff" };
 
-loader.load(
-  "/models/scene.gltf",
-  (gltf) => {
-    gltfModel = gltf.scene;
+loader.load("/models/scene.gltf", (gltf) => {
+  gltfModel = gltf.scene;
+  gltfModel.scale.set(1.2, 1.2, 1.2);
+  gltfModel.position.set(0, 2, 0);
 
-    gltfModel.scale.set(1.2, 1.2, 1.2);
-    gltfModel.position.set(0, 2, 0);
-
-    vecnaHeadObject =
+  vecnaHeadObject =
     gltfModel.getObjectByName("Head") ||
     gltfModel.getObjectByName("mixamorigHead") ||
     null;
 
-    gltfModel.traverse(child => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        // child.material.emissive = new THREE.Color("#1ad9ff");
-        // child.material.emissiveIntensity = 0.8;
-//         bloomPass.strength = 1.0;
-// bloomPass.radius = 0.7;
-// bloomPass.threshold = 0.25;
-        child.material.color.set(vecnaMaterialConfig.color);
-      }
+  gltfModel.traverse(child => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+      child.material.color.set(vecnaMaterialConfig.color);
+    }
+  });
+
+  gui.addColor(vecnaMaterialConfig, "color")
+    .onChange(v => {
+      gltfModel.traverse(c => c.isMesh && c.material.color.set(v));
     });
 
-    gui.addColor(vecnaMaterialConfig, "color")
-      .name("Vecna Color")
-      .onChange(value => {
-        gltfModel.traverse(child => {
-          if (child.isMesh) child.material.color.set(value);
-        });
-      });
-
-    scene.add(gltfModel);
-  },
-  undefined,
-  error => console.error("GLTF Load Error:", error)
-);
-/* =========================================================
-   Point Light
-========================================================= */
-
-// 👁️ Under-face horror light
-const underLight = new THREE.PointLight(
-  0x223344, // cold blue-gray
-  0.8,      // intensity
-  3,        // distance
-  2         // decay
-);
-
-// Slightly below face, close to camera
-underLight.position.set(0.1, 1.2, 1.3);
-
-scene.add(underLight);
-
-/* =========================================================
-  Fake VOLUMETRIC CONE (light beam)
-========================================================= */
-const coneGeo = new THREE.ConeGeometry(1.2, 4, 32, 1, true);
-const coneMat = new THREE.MeshBasicMaterial({
-  color: 0x66ccff,
-  transparent: true,
-  opacity: 0.6,
-  depthWrite: false,
-  side: THREE.DoubleSide
+  scene.add(gltfModel);
 });
 
-const lightCone = new THREE.Mesh(coneGeo, coneMat);
-
-// Match spotlight direction
-lightCone.position.set(1.2, 4.2, 2);
-lightCone.rotation.x = Math.PI;
-scene.add(lightCone);
-
 /* =========================================================
-   FLOOR
+   ENVIRONMENT (FLOOR + CONE)
 ========================================================= */
-
 const textureLoader = new THREE.TextureLoader();
 const floorTexture = textureLoader.load("../models/textures/watertexture.png");
 const heightMap = textureLoader.load("../models/textures/water1.jpg");
@@ -246,17 +225,31 @@ const floor = new THREE.Mesh(
     color: "skyblue"
   })
 );
-
 floor.rotation.x = -Math.PI / 2;
 floor.position.y = -2.5;
 floor.receiveShadow = true;
 scene.add(floor);
 
+// // Volumetric cone
+// const lightCone = new THREE.Mesh(
+//   new THREE.ConeGeometry(1.2, 4, 32, 1, true),
+//   new THREE.MeshBasicMaterial({
+//     color: 0x66ccff,
+//     transparent: true,
+//     opacity: 0.6,
+//     depthWrite: false,
+//     side: THREE.DoubleSide
+//   })
+// );
+// lightCone.position.set(1.2, 4.2, 2);
+// lightCone.rotation.x = Math.PI;
+// scene.add(lightCone);
+
 /* =========================================================
-   STAR PARTICLES
+   STARS
 ========================================================= */
 
-const starCount = 20000;
+const starCount = 5000;
 const starPositions = new Float32Array(starCount * 3);
 
 for (let i = 0; i < starCount; i++) {
@@ -269,7 +262,7 @@ const starGeometry = new THREE.BufferGeometry();
 starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
 
 const starMaterial = new THREE.PointsMaterial({
-  size: 0.042,
+  size: 0.13,
   map: createGlowTexture(),
   transparent: true,
   depthWrite: false,
@@ -281,6 +274,31 @@ const stars = new THREE.Points(starGeometry, starMaterial);
 stars.position.set(0, 1, -2);
 stars.rotation.x = Math.PI / 2;
 scene.add(stars);
+
+const starPositionsArray = starGeometry.attributes.position.array;
+const starBasePositions = new Float32Array(starPositionsArray.length);
+
+starBasePositions.set(starPositionsArray);
+
+function animateStars(time) {
+  const t = time * 0.001;
+
+  for (let i = 0; i < starCount; i++) {
+    const index = i * 3;
+
+    // Subtle floating motion on Y-axis
+    starPositionsArray[index + 1] =
+      starBasePositions[index + 1] +
+      Math.sin(t + i * 0.1) * 0.3;
+
+    // Optional slight Z drift (depth feel)
+    starPositionsArray[index + 2] =
+      starBasePositions[index + 2] +
+      Math.cos(t + i * 0.05) * 0.15;
+  }
+
+  starGeometry.attributes.position.needsUpdate = true;
+}
 
 /* =========================================================
    HELPERS
@@ -306,212 +324,271 @@ function createGlowTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-/* =========================================================
-   ANIMATION LOOP
-========================================================= */
-const starPositionsArray = starGeometry.attributes.position.array;
-const starBasePositions = new Float32Array(starPositionsArray.length);
-
-starBasePositions.set(starPositionsArray);
-
-function animateStars(time) {
-  const t = time * 0.001;
-
-  for (let i = 0; i < starCount; i++) {
-    const index = i * 3;
-
-    // Subtle floating motion on Y-axis
-    starPositionsArray[index + 1] =
-      starBasePositions[index + 1] +
-      Math.sin(t + i * 0.1) * 0.3;
-
-    // Optional slight Z drift (depth feel)
-    starPositionsArray[index + 2] =
-      starBasePositions[index + 2] +
-      Math.cos(t + i * 0.05) * 0.15;
-  }
-
-  starGeometry.attributes.position.needsUpdate = true;
-}
-/* =========================================================
- Spot light
-========================================================= */
-const spotLight = new THREE.SpotLight(
-  0x66ccff,   // cold cyan (horror)
-  6,          // intensity
-  15,         // distance
-  Math.PI / 8,// tight cone
-  0.5,        // soft edge
-  2           // decay
-);
-
-// Horror angle: top + side
-spotLight.position.set(1.2, 4.5, 2);
-
-// Aim at face
-spotLight.target.position.set(0, 1.8, 0);
-
-spotLight.castShadow = true;
-spotLight.shadow.mapSize.set(2048, 2048);
-spotLight.shadow.bias = -0.0005;
-
-scene.add(spotLight);
-scene.add(spotLight.target);
-
-
-
-
 
 /* =========================================================
- Hemisphere Light
+   POST PROCESSING
 ========================================================= */
-
-const hemiLight = new THREE.HemisphereLight(
-  0x88ccff, // sky color
-  0x222222, // ground color
-  0.03      // intensity
-);
-hemiLight.position.set(0, 10, 0);
-scene.add(hemiLight);
-
-/* =========================================================
-Rim Light
-========================================================= */
-// Rim Light (back light to separate model)
-const rimLight = new THREE.DirectionalLight(0x66ccff, 0);
-rimLight.position.set(-5, 4, -6); // behind the model
-scene.add(rimLight);
-
-// GUI controls
-const rimFolder = gui.addFolder("Rim Light");
-rimFolder.add(rimLight.position, "x", -10, 10, 0.1);
-rimFolder.add(rimLight.position, "y", -10, 10, 0.1);
-rimFolder.add(rimLight.position, "z", -10, 10, 0.1);
-rimFolder.add(rimLight, "intensity", 0, 5, 0.1);
-
-/* =========================================================
- Background Control
-========================================================= */
-
-const bgConfig ={
-  background: '#000000',
-}
-scene.background.set('#000000')
-
-gui.addColor(bgConfig, "background").name("Background Color").onChange((value)=>{
-  scene.background.set(value);
-})
-
-
-
-
-
-/* =========================================================
-   Animate Model
-========================================================= */
-function animateModel(time) {
-   if (!gltfModel) return;
-
-  const t = time * 0.001;
-
-  // const pulse = 0.6 + Math.sin(t * 2) * 0.25;
-
-  // gltfModel.traverse(child => {
-  //   if (child.isMesh && child.material.emissive) {
-  //     child.material.emissiveIntensity = pulse;
-  //   }
-  // });
-
-  gltfModel.position.y =
-    vecnaControls.posY + Math.sin(t * 1.5) * 0.08;
-
-  gltfModel.rotation.y = Math.sin(t * 0.4) * 0.08;
-}
-
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.35, // strength
-  0.25, // radius
-  0.4 // threshold
+  0.95,
+  0.65,
+  0.65
 );
-
 composer.addPass(bloomPass);
 
-/* =========================================================
- color shader
-========================================================= */
-const ColorGradeShader = {
+const colorGradePass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null },
     tint: { value: new THREE.Vector3(0.85, 0.95, 1.1) },
     contrast: { value: 1.08 }
   },
-  vertexShader: `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-    }
-  `,
-  fragmentShader: `
-    uniform sampler2D tDiffuse;
-    uniform vec3 tint;
-    uniform float contrast;
-    varying vec2 vUv;
-
-    void main() {
-      vec4 color = texture2D(tDiffuse, vUv);
-      color.rgb *= tint;
-      color.rgb = (color.rgb - 0.5) * contrast + 0.5;
-      gl_FragColor = color;
-    }
-  `
-};
-
-const colorGradePass = new ShaderPass(ColorGradeShader);
+  vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform vec3 tint; uniform float contrast; varying vec2 vUv;
+    void main(){vec4 c=texture2D(tDiffuse,vUv);c.rgb*=tint;c.rgb=(c.rgb-0.5)*contrast+0.5;gl_FragColor=c;}`
+});
 composer.addPass(colorGradePass);
 
+let bloomEnabled = false;
+let colorGradeEnabled = false;
 
+window.addEventListener("keydown", (e) => {
+  if (e.key === "b" || e.key === "B") {
+    bloomEnabled = !bloomEnabled;
+    bloomPass.enabled = bloomEnabled;
+    console.log("Bloom:", bloomEnabled ? "ON" : "OFF");
+  }
+
+  if (e.key === "s" || e.key === "S") {
+    colorGradeEnabled = !colorGradeEnabled;
+    colorGradePass.enabled = colorGradeEnabled;
+    console.log("Color Grade:", colorGradeEnabled ? "ON" : "OFF");
+  }
+});
+/* =========================================================
+   Light ning and Sound
+========================================================= */
+let soundEnabled = false;
+let audioUnlocked = false;
+let audioReady = false;
+
+const listener = new THREE.AudioListener();
+camera.add(listener);
+
+const thunderSound = new THREE.Audio(listener);
+const audioLoader = new THREE.AudioLoader();
+
+audioLoader.load("/sounds/thunder.mp3", (buffer) => {
+  thunderSound.setBuffer(buffer);
+  thunderSound.setLoop(false);
+  thunderSound.setVolume(0.9);
+  audioReady = true;
+});
+
+const sound = document.querySelector("#sound");
+
+sound.addEventListener("click", async () => {
+  soundEnabled = !soundEnabled;
+
+  if (!audioUnlocked) {
+    await listener.context.resume();
+    audioUnlocked = true;
+  }
+
+  sound.textContent = "Sound"
+
+    // ▶️ PLAY SOUND WHEN TURNED ON
+  if (soundEnabled && audioReady) {
+    thunderSound.stop();   // reset if already playing
+    thunderSound.play();   // play immediately
+  }
+});
+
+// lightning
+// Material (THIS was missing)
+const lightningMaterial = new THREE.LineBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0
+});
+
+function generateLightningPoints(
+  start,
+  segments,
+  spreadX = 2,
+  spreadZ = 2
+) {
+  const points = [];
+  let current = start.clone();
+
+  points.push(current.clone());
+
+  for (let i = 0; i < segments; i++) {
+    current = current.clone();
+    current.x += (Math.random() - 0.5) * spreadX;
+    current.y -= Math.random() * 1.2 + 0.7;
+    current.z += (Math.random() - 0.5) * spreadZ;
+
+    points.push(current.clone());
+  }
+
+  return points;
+}
+
+function createBranchingLightning() {
+  const group = new THREE.Group();
+
+  // MAIN BOLT
+  const mainPoints = generateLightningPoints(
+    new THREE.Vector3(0, 12, 0),
+    10,
+    2,
+    2
+  );
+
+  const mainGeometry = new THREE.BufferGeometry().setFromPoints(mainPoints);
+  const mainBolt = new THREE.Line(mainGeometry, lightningMaterial);
+  group.add(mainBolt);
+
+  // BRANCHES
+  const branchCount = THREE.MathUtils.randInt(2, 4);
+
+  for (let i = 0; i < branchCount; i++) {
+    const branchStartIndex = THREE.MathUtils.randInt(2, mainPoints.length - 3);
+    const branchStart = mainPoints[branchStartIndex];
+
+    const branchPoints = generateLightningPoints(
+      branchStart.clone(),
+      THREE.MathUtils.randInt(3, 5),
+      1.5,
+      1.5
+    );
+
+    const branchGeometry = new THREE.BufferGeometry().setFromPoints(branchPoints);
+    const branch = new THREE.Line(branchGeometry, lightningMaterial);
+    group.add(branch);
+  }
+
+  return group;
+}
+
+
+
+
+let lightning = createBranchingLightning();
+scene.add(lightning);
+
+const LIGHTNING_COUNT_MIN = 4;
+const LIGHTNING_COUNT_MAX = 8;
+
+let lightningGroup = new THREE.Group();
+scene.add(lightningGroup);
+
+const lightningLight = new THREE.DirectionalLight(0xffffff, 0);
+lightningLight.position.set(5, 10, 5);
+scene.add(lightningLight);
+
+function triggerLightning() {
+  // cleanup old lightning
+  lightningGroup.children.forEach(bolt => {
+    bolt.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+    });
+  });
+  lightningGroup.clear();
+
+  // number of bolts this strike
+  const boltCount = THREE.MathUtils.randInt(
+    LIGHTNING_COUNT_MIN,
+    LIGHTNING_COUNT_MAX
+  );
+
+  for (let i = 0; i < boltCount; i++) {
+    const bolt = createBranchingLightning();
+
+    // random horizontal offset
+    bolt.position.x = (Math.random() - 0.5) * 6;
+    bolt.position.z = (Math.random() - 0.5) * 6;
+
+    lightningGroup.add(bolt);
+  }
+
+  // flash
+  lightningMaterial.opacity = 1;
+  lightningLight.intensity = 8;
+
+  // flicker off
+  setTimeout(() => {
+    lightningMaterial.opacity = 0;
+    lightningLight.intensity = 0;
+  }, 90);
+}
+
+function lightningLoop() {
+  const delay = THREE.MathUtils.randInt(2500, 6000);
+
+  setTimeout(() => {
+    triggerLightning();
+    lightningLoop();
+  }, delay);
+}
+
+lightningLoop();
+
+
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+function animateModel(time) {
+  if (!gltfModel) return;
+  const t = time * 0.001;
+  gltfModel.position.y = vecnaControls.posY + Math.sin(t * 1.5) * 0.08;
+  gltfModel.rotation.y = Math.sin(t * 0.4) * 0.08;
+}
 
 function animate() {
   requestAnimationFrame(animate);
-   animateStars(performance.now()); // ⭐ particle animation
-   animateModel(performance.now()); 
+  animateStars(performance.now()); // ⭐ particle animation
+  animateModel(performance.now());
 
-   if (gltfModel) {
-    if (vecnaHeadObject) {
-      // 🎯 Exact face lock
-      vecnaHeadObject.getWorldPosition(vecnaHead);
-    } else {
-      // Fallback: approximate face height
-      gltfModel.getWorldPosition(vecnaHead);
-      vecnaHead.y += 2.4;
-    }
+  if (gltfModel) {
 
-    controls.target.lerp(vecnaHead, 0.08); // smooth look
+  // 1️⃣ UPDATE TARGET FIRST
+  if (vecnaHeadObject) {
+    vecnaHeadObject.getWorldPosition(vecnaHead);
+  } else {
+    gltfModel.getWorldPosition(vecnaHead);
+    vecnaHead.y += 2.4;
   }
+
+  // 2️⃣ CAMERA ORBIT AROUND UPDATED TARGET
+  camera.position.x =
+    vecnaHead.x + Math.cos(cameraOrbit.angle) * cameraOrbit.radius;
+
+  camera.position.z =
+    vecnaHead.z + Math.sin(cameraOrbit.angle) * cameraOrbit.radius;
+
+  camera.position.y = vecnaHead.y + 0.15;
+
+  camera.lookAt(vecnaHead);
+
+  // 3️⃣ SMOOTH CONTROL TARGET (optional but good)
+  controls.target.lerp(vecnaHead, 0.08);
+}
+
+
   targetDebug.position.copy(controls.target);
-
-  const t = performance.now() * 0.001;
-
-
-
-// camera.position.x += Math.sin(t * 0.6) * 0.001;
-// camera.position.y += Math.sin(t * 0.8) * 0.0008;
-// spotLight.intensity = 5.5 + Math.sin(t * 6.5) * 0.4 + Math.random() * 0.15;
-
   controls.update();
- composer.render();
+  composer.render();
 }
 animate();
 
 /* =========================================================
-   RESIZE HANDLER
+   RESIZE
 ========================================================= */
-
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
