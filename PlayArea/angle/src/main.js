@@ -23,6 +23,7 @@ const camera = new THREE.PerspectiveCamera(
   1000
 )
 camera.position.set(0,0,5)
+
 // renderer 
 // antialias provide smooth edges
 const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
@@ -31,8 +32,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 
-// const gui
-// const gui = new GUI();
+
 /* =========================================================
  Background setup
 ========================================================= */
@@ -97,27 +97,6 @@ const rimLight = new THREE.DirectionalLight("#b6b6e2", 15.6);
 rimLight.position.set(7, 7, 4.1);
 rimLight.color.set("#b6b6e2")
 scene.add(rimLight);
-
-// const rimFolder = gui.addFolder("Rim Light");
-
-// // intensity
-// rimFolder.add(rimLight, "intensity", 0, 5, 0.01);
-
-// // color
-// const rimParams = {
-//   color: "#b6b6e2"
-// };
-
-// rimFolder.addColor(rimParams, "color").onChange((value) => {
-//   rimLight.color.set(value);
-// });
-
-// // position
-// rimFolder.add(rimLight.position, "x", -10, 10, 0.1);
-// rimFolder.add(rimLight.position, "y", -10, 10, 0.1);
-// rimFolder.add(rimLight.position, "z", -10, 10, 0.1);
-
-// rimFolder.open();
 
 /* =========================================================
   Gsap Animation
@@ -282,41 +261,6 @@ scene.add(spotLight.target);
 // Add to scene
 scene.add(spotLight);
 
-// const spotLightHelper = new THREE.SpotLightHelper(spotLight);
-// scene.add(spotLightHelper);
-
-// const spotFolder = gui.addFolder("Spot Light");
-
-// // intensity
-// spotFolder.add(spotLight, "intensity", 0, 10, 0.01);
-
-// // distance
-// spotFolder.add(spotLight, "distance", 0, 50, 0.1);
-
-// // angle (cone)
-// spotFolder
-//   .add(spotLight, "angle", 0.1, Math.PI / 2, 0.01)
-//   .onChange(() => spotLightHelper.update());
-
-// // penumbra (soft edge)
-// spotFolder.add(spotLight, "penumbra", 0, 1, 0.01);
-
-// // decay (realistic falloff)
-// spotFolder.add(spotLight, "decay", 0, 2, 0.01);
-
-// // position controls
-// spotFolder.add(spotLight.position, "x", -10, 10, 0.1);
-// spotFolder.add(spotLight.position, "y", 0, 10, 0.1);
-// spotFolder.add(spotLight.position, "z", -10, 10, 0.1);
-
-// // target controls
-// spotFolder.add(spotLight.target.position, "x", -5, 5, 0.1);
-// spotFolder.add(spotLight.target.position, "y", 0, 5, 0.1);
-// spotFolder.add(spotLight.target.position, "z", -5, 5, 0.1);
-
-// spotFolder.open();
-
-
 
 
 
@@ -350,10 +294,14 @@ window.addEventListener("resize", () => {
 
 let isInteractive = false;
 const inspectBtn = document.querySelector('#intraction');
+const escapeBtn = document.querySelector('#escapebtn');
+escapeBtn.classList.add("hide")
 
 inspectBtn.addEventListener("click",()=>{
   console.log('button is clicked')
 if (isInteractive) return;
+
+escapeBtn.classList.remove("hide");
 
 isInteractive = true;
 canvas.classList.add("interactive");
@@ -362,19 +310,40 @@ canvas.classList.add("interactive");
 
     // Enable user control
   controls.enabled = true;
-
+  camera.zoom = false;
   // Smooth camera settle
   gsap.to(camera.position, {
     x: 0,
-    y: 0.6,
-    z: 2.5,
-    duration: 1.2,
+    y: 0.2,
+    z: 2,
+    duration: 1.8,
     ease: "power3.inOut"
   });
 
 })
 window.addEventListener("keydown", (e) => {
   if (e.key !== "Escape" || !isInteractive) return;
+  
+  isInteractive = false;
+
+  canvas.classList.remove("interactive");
+
+  // Re-enable scroll animations
+  ScrollTrigger.getAll().forEach(st => st.enable());
+
+  controls.enabled = false;
+  camera.zoom = true;
+
+  gsap.to(camera.position, {
+    x: 0,
+    y: 0,
+    z: 5,
+    duration: 3.2,
+    ease: "power3.inOut"
+  });
+});
+
+escapeBtn.addEventListener('click',()=>{
 
   isInteractive = false;
 
@@ -384,12 +353,15 @@ window.addEventListener("keydown", (e) => {
   ScrollTrigger.getAll().forEach(st => st.enable());
 
   controls.enabled = false;
+  camera.zoom = true;
 
   gsap.to(camera.position, {
     x: 0,
     y: 0,
     z: 5,
-    duration: 1.2,
+    duration: 3.2,
     ease: "power3.inOut"
   });
-});
+
+escapeBtn.classList.add('hide');
+})
