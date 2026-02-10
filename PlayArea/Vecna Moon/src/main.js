@@ -9,10 +9,15 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
-import {gsap} from "gsap";
+import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { MotionPathPlugin } from "gsap/MotionPathPlugin"
+gsap.registerPlugin(ScrollTrigger,MotionPathPlugin);
 
-gsap.registerPlugin(ScrollTrigger);
+/* =========================================================
+   GUI
+========================================================= */
+const gui = new GUI();
 /* =========================================================
    CORE SETUP
 ========================================================= */
@@ -23,7 +28,7 @@ const canvas = document.querySelector("canvas.world");
 // Scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x111111);
-scene.fog = new THREE.Fog(0x000000, 6, 18);
+scene.fog = new THREE.Fog(0x000000, 0.06, 50);
 
 // Camera
 const camera = new THREE.PerspectiveCamera(
@@ -32,7 +37,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.set(0.22, 1.55, 1.85);
+
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -42,45 +47,140 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 
 // Controls
+
+// Smooth motion
 const controls = new OrbitControls(camera, renderer.domElement);
+
 controls.enableDamping = true;
-controls.minPolarAngle = Math.PI * 0.35;
-controls.maxPolarAngle = Math.PI * 0.55;
+controls.dampingFactor = 0.06;
+
+
+controls.autoRotate = true;
+controls.enabled = true;
+camera.position.set(0.22, 1.55, 1.85);
+
+
+// Pan control
+controls.enablePan = true;
+
+// Target (what camera looks at)
+controls.target.set(0, 1.6, 0);
+controls.update();
+
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.4;
+
+// Pause auto-rotate on user input
+controls.addEventListener("start", () => {
+  controls.autoRotate = false;
+});
+
+
+
 
 
 // Disable controls during intro
-controls.enabled = false;
+const camFolder = gui.addFolder("Camera Position");
 
-  const cameraOrbit = {
-  angle: Math.PI * 0.25, // starting angle
-  radius: 1.9
-};
+camFolder.add(camera.position, "x", -50, 50, 0.01);
+camFolder.add(camera.position, "y", -50, 50, 0.01);
+camFolder.add(camera.position, "z", -50, 50, 0.01);
+camFolder.open();
+
+const rotFolder = gui.addFolder("Camera Rotation");
+
+rotFolder.add(camera.rotation, "x", -Math.PI, Math.PI, 0.001);
+rotFolder.add(camera.rotation, "y", -Math.PI, Math.PI, 0.001);
+rotFolder.add(camera.rotation, "z", -Math.PI, Math.PI, 0.001);
+
+const lensFolder = gui.addFolder("Camera Lens");
+lensFolder.add(camera, "fov", 20, 100, 1).onChange(() => {
+  camera.updateProjectionMatrix();
+});
 
 
 
 // Camera intro animation
+const pathPoints = [
+  // 🎬 Establishing shot (high & far)
+  new THREE.Vector3(0, 30, 80),
+
+  // Very slow descent
+  new THREE.Vector3(0, 28, 72),
+  new THREE.Vector3(0, 26, 64),
+
+  // Gentle glide
+  new THREE.Vector3(0, 23, 56),
+  new THREE.Vector3(0, 20, 48),
+
+  // Mid approach
+  new THREE.Vector3(0, 17, 40),
+  new THREE.Vector3(0, 14, 32),
+
+  // Slightly faster drop
+  new THREE.Vector3(0, 11, 24),
+  new THREE.Vector3(0, 8, 18),
+
+  // Final cinematic settle
+  new THREE.Vector3(0, 5, 12),
+  new THREE.Vector3(0, 3, 6),
+  new THREE.Vector3(0, 1.5, 2),
+
+  // 🎯 End
+  new THREE.Vector3(0, -2, -8),
+
+
+];
+const cameraPath = new THREE.CatmullRomCurve3(pathPoints)
+cameraPath.curveType = "catmullrom"
+cameraPath.tension = 0.5
+
+const pathGeo = new THREE.BufferGeometry().setFromPoints(
+  cameraPath.getPoints(100)
+)
+const pathMat = new THREE.LineBasicMaterial({ color: 0xff0000 })
+const pathLine = new THREE.Line(pathGeo, pathMat)
+scene.add(pathLine)
+
+const motionState = { t: 0 }
+
+
 window.addEventListener("load", () => {
+  // any initial gsap setup
+  gsap.set(".scroll-section", { opacity: 1 })
 
+gsap.to(motionState, {
+  t: 1,
+  ease: "none",
+  scrollTrigger: {
+    trigger: ".scroll-section",
+    start: "top top",
+    end: "+=10000",
+    scrub: 1,
+    markers: true,
+  },
 
-  // Scroll-driven orbit
-  gsap.to(cameraOrbit, {
-    angle: Math.PI * 3.60,
-    ease: "none",
-    scrollTrigger: {
-      trigger: ".hero-section",
-      start: "top top",
-      end: "+=3000",      // 🔑 FIXED RANGE
-      scrub: 1,
-      markers: true
-    }
-  });
+  onUpdate: () => {
+    const position = cameraPath.getPointAt(motionState.t);
+    const lookAhead = cameraPath.getPointAt(
+      Math.min(motionState.t + 0.02, 1)
+    );
 
-  ScrollTrigger.refresh(); // 🔑 REQUIRED
+    camera.position.copy(position);
+    camera.lookAt(
+      lookAhead.x,
+      lookAhead.y + 0.3,
+      lookAhead.z
+    );
+  }
 });
-/* =========================================================
-   GUI
-========================================================= */
-const gui = new GUI();
+
+   // delay refresh slightly so layout + WebGL are stable
+  setTimeout(() => {
+    ScrollTrigger.refresh()
+  }, 100)
+})
+
 
 /* =========================================================
    MODEL STATE & CONTROLS
@@ -217,7 +317,7 @@ const floorTexture = textureLoader.load("../models/textures/watertexture.png");
 const heightMap = textureLoader.load("../models/textures/water1.jpg");
 
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(50, 50, 100, 100),
+  new THREE.PlaneGeometry(200, 200, 100, 100),
   new THREE.MeshStandardMaterial({
     map: floorTexture,
     displacementMap: heightMap,
@@ -230,20 +330,6 @@ floor.position.y = -2.5;
 floor.receiveShadow = true;
 scene.add(floor);
 
-// // Volumetric cone
-// const lightCone = new THREE.Mesh(
-//   new THREE.ConeGeometry(1.2, 4, 32, 1, true),
-//   new THREE.MeshBasicMaterial({
-//     color: 0x66ccff,
-//     transparent: true,
-//     opacity: 0.6,
-//     depthWrite: false,
-//     side: THREE.DoubleSide
-//   })
-// );
-// lightCone.position.set(1.2, 4.2, 2);
-// lightCone.rotation.x = Math.PI;
-// scene.add(lightCone);
 
 /* =========================================================
    STARS
@@ -387,24 +473,7 @@ audioLoader.load("/sounds/thunder.mp3", (buffer) => {
   audioReady = true;
 });
 
-const sound = document.querySelector("#sound");
 
-sound.addEventListener("click", async () => {
-  soundEnabled = !soundEnabled;
-
-  if (!audioUnlocked) {
-    await listener.context.resume();
-    audioUnlocked = true;
-  }
-
-  sound.textContent = "Sound"
-
-    // ▶️ PLAY SOUND WHEN TURNED ON
-  if (soundEnabled && audioReady) {
-    thunderSound.stop();   // reset if already playing
-    thunderSound.play();   // play immediately
-  }
-});
 
 // lightning
 // Material (THIS was missing)
@@ -554,34 +623,7 @@ function animate() {
   animateStars(performance.now()); // ⭐ particle animation
   animateModel(performance.now());
 
-  if (gltfModel) {
-
-  // 1️⃣ UPDATE TARGET FIRST
-  if (vecnaHeadObject) {
-    vecnaHeadObject.getWorldPosition(vecnaHead);
-  } else {
-    gltfModel.getWorldPosition(vecnaHead);
-    vecnaHead.y += 2.4;
-  }
-
-  // 2️⃣ CAMERA ORBIT AROUND UPDATED TARGET
-  camera.position.x =
-    vecnaHead.x + Math.cos(cameraOrbit.angle) * cameraOrbit.radius;
-
-  camera.position.z =
-    vecnaHead.z + Math.sin(cameraOrbit.angle) * cameraOrbit.radius;
-
-  camera.position.y = vecnaHead.y + 0.15;
-
-  camera.lookAt(vecnaHead);
-
-  // 3️⃣ SMOOTH CONTROL TARGET (optional but good)
-  controls.target.lerp(vecnaHead, 0.08);
-}
-
-
-  targetDebug.position.copy(controls.target);
-  controls.update();
+  
   composer.render();
 }
 animate();

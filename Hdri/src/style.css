@@ -1,0 +1,32 @@
+*{
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+html,body{
+  height:100%;
+  width:100%
+}
+.canvas-cover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none; /* allows scrolling */
+  z-index: 1;
+}
+canvas{
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* Scroll section */
+.section-1 {
+  position: relative;
+  min-height: 200vh; /* force scroll */
+  width: 100vw;
+  z-index: 2;
+  background: transparent;
+}
+

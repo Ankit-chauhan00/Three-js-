@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "font1";
+  src: url("/fonts/font1.woff2") format("woff2");
+  font-weight: 400 ;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "font1";
+  src: url("/fonts/font1-bold.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: "font1";
+  src: url("/fonts/font1-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "font2";
+  src: url("/fonts/font2.woff2") format("woff2");
+  font-weight: 400 ;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "font2";
+  src: url("/fonts/font2.woff2") format("woff2");
+  font-weight: 600 ;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "font3";
+  src: url("/fonts/font3.woff2") format("woff2");
+  font-weight: 400 ;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: brown;
+  font-family: font1;
+}
+
+body {
+  overflow-x: hidden;
+}
+/* Font */
+.header-brand {
+  font-size: 24px;
+  letter-spacing: 2px;
+}
+
+/* Canvas background */
+.canvas-container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none; /* IMPORTANT */
+  width: 100vw;
+  height: 100vh;
+}
+
+.world {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Header on top */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  pointer-events: auto;
+  padding-top: 20px;
+}
+
+/* Header layout */
+.header-container {
+  height: 64px;
+  padding: 32px 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+}
+.header-container  .header-brand{
+  font-family: font2;
+  font-weight: 500;
+  color: brown;
+  font-size: 40px;
+}
+
+.header-container span {
+  font-size:small;
+  font-family: font2;
+  color: brown;
+}
+.header-menu{
+  display: flex;
+  justify-content: space-between;
+  gap: 100px;
+}
+.hero-section{
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 100vh;
+  z-index: 15;
+  display:flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px;
+  padding: 120px 52px 0; /* ⬅ header height compensation */
+}
+
+.hero-section .hero-content{
+  position: relative;
+  height: 200px;
+  width: 300px;
+
+}
+.hero-title{
+  font-size: 60px;
+  font-weight: 900;
+  letter-spacing: 10px;
+  color: rgb(72, 26, 6);
+}
+.hero-description{
+  font-size: 11px;
+  color: rgb(72, 26, 6);
+}
+
+.section-1{
+  z-index: 5;
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  background: transparent; /* IMPORTANT */
+}
+
